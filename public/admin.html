@@ -1,0 +1,1291 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Master Admin Management Panel</title>
+    <style>
+        :root {
+            --bg-primary: #f8fafc;
+            --sidebar-bg: #0f172a;
+            --card-bg: #ffffff;
+            --border-color: #e2e8f0;
+            --accent-blue: #0284c7;
+            --accent-green: #16a34a;
+            --accent-red: #dc2626;
+            --text-dark: #0f172a;
+            --text-muted: #64748b;
+        }
+
+        * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        body { margin: 0; background: var(--bg-primary); color: var(--text-dark); -webkit-text-size-adjust: 100%; }
+
+        .top-bar { 
+            background: linear-gradient(135deg, #0f172a, #1e293b); color: white; padding: 10px 14px; 
+            display: flex; align-items: center; justify-content: space-between;
+            box-shadow: 0 4px 12px rgba(15, 23, 42, 0.15); position: sticky; top: 0; z-index: 100;
+            gap: 8px; flex-wrap: wrap;
+        }
+
+        .header-title-group { display: flex; align-items: center; gap: 8px; }
+        .menu-btn { background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2); color: white; font-size: 18px; padding: 5px 10px; border-radius: 8px; cursor: pointer; }
+        .header-title { font-size: 14px; font-weight: 800; white-space: nowrap; }
+        .role-badge { display: inline-block; padding: 2px 8px; border-radius: 12px; background: #e0f2fe; color: #0369a1; font-size: 10px; font-weight: 800; text-transform: uppercase; }
+        
+        .header-actions { display: flex; align-items: center; gap: 6px; }
+        .btn-header { padding: 6px 10px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; color: white; font-size: 11px; white-space: nowrap; }
+        .btn-diag { background: #0284c7; }
+        .btn-logout { background: #dc2626; }
+
+        .drawer-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); display: none; z-index: 200; }
+        .drawer { position: fixed; top: 0; left: -280px; width: 280px; height: 100%; background: var(--sidebar-bg); color: white; z-index: 201; transition: left 0.3s ease; padding: 20px; box-shadow: 4px 0 20px rgba(0,0,0,0.3); overflow-y: auto; }
+        .drawer.open { left: 0; }
+        .drawer h3 { font-size: 14px; text-transform: uppercase; letter-spacing: 1px; color: #94a3b8; margin-top: 0; padding-bottom: 12px; border-bottom: 1px solid #334155; }
+
+        .drawer-nav { list-style: none; padding: 0; margin: 15px 0; }
+        .drawer-nav li { padding: 10px 12px; margin-bottom: 6px; border-radius: 10px; cursor: pointer; font-weight: 600; font-size: 13px; display: flex; align-items: center; gap: 10px; color: #cbd5e1; transition: all 0.2s ease; }
+        .drawer-nav li:hover, .drawer-nav li.active { background: #0284c7; color: white; }
+
+        .container { padding: 12px; max-width: 950px; margin: 0 auto; }
+        .card { background: var(--card-bg); padding: 16px; border-radius: 16px; margin-bottom: 16px; border: 1px solid var(--border-color); box-shadow: 0 2px 8px rgba(0,0,0,0.02); }
+        .card h3 { margin-top: 0; font-size: 15px; color: var(--text-dark); font-weight: 800; display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+
+        .stat-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-top: 10px; }
+        @media (min-width: 600px) { .stat-grid { grid-template-columns: repeat(4, 1fr); } }
+        
+        .stat-box { background: #f8fafc; padding: 12px; border-radius: 12px; text-align: center; border: 1px solid var(--border-color); }
+        .stat-box h4 { margin: 0; font-size: 10px; color: var(--text-muted); text-transform: uppercase; }
+        .stat-box p { margin: 4px 0 0 0; font-size: 18px; font-weight: 800; color: var(--text-dark); }
+
+        .table-responsive { width: 100%; overflow-x: auto; margin-top: 8px; -webkit-overflow-scrolling: touch; }
+        table { width: 100%; border-collapse: collapse; font-size: 11px; white-space: nowrap; }
+        th, td { border: 1px solid var(--border-color); padding: 8px 10px; text-align: left; }
+        th { background: #f1f5f9; font-weight: 800; color: #475569; text-transform: uppercase; font-size: 10px; }
+
+        .badge { padding: 3px 8px; border-radius: 10px; font-size: 9px; font-weight: 800; color: white; text-transform: uppercase; display: inline-block; }
+        .badge-active { background: #16a34a; }
+        .badge-closed { background: #dc2626; }
+        .badge-pending { background: #ca8a04; }
+
+        .btn-sm { padding: 5px 9px; border-radius: 6px; border: none; font-weight: bold; cursor: pointer; color: white; font-size: 10px; }
+        .btn-edit { background: #ca8a04; margin-right: 3px; }
+        .btn-del { background: #dc2626; }
+
+        label { font-size: 10px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 10px; display: block; }
+        input, select, textarea { width: 100%; padding: 10px; margin: 4px 0 10px 0; border-radius: 8px; border: 1px solid var(--border-color); font-size: 13px; outline: none; background: #f8fafc; }
+
+        .action-btn { width: 100%; padding: 11px; border-radius: 8px; border: none; font-weight: 800; cursor: pointer; color: white; background: #16a34a; font-size: 12px; margin-top: 6px; }
+        .danger-btn { background: #dc2626; }
+        .photo-thumb { width: 38px; height: 38px; border-radius: 6px; object-fit: cover; border: 1px solid var(--border-color); }
+
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.75); backdrop-filter: blur(6px); display: none; align-items: center; justify-content: center; z-index: 999; padding: 14px; animation: fadeIn 0.2s ease; }
+        .modal-box { background: #ffffff; padding: 22px; border-radius: 20px; width: 100%; max-width: 440px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); text-align: center; border: 1px solid var(--border-color); animation: scaleUp 0.2s ease; }
+        
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes scaleUp { from { transform: scale(0.95); } to { transform: scale(1); } }
+
+        .modal-title { font-size: 17px; font-weight: 800; color: #0f172a; margin-top: 0; margin-bottom: 8px; }
+        .modal-body { font-size: 13px; color: #475569; line-height: 1.5; margin-bottom: 18px; }
+        .modal-actions { display: flex; gap: 8px; justify-content: center; }
+        
+        .nav-pills { display: flex; gap: 6px; margin-bottom: 12px; overflow-x: auto; padding-bottom: 4px; }
+        .nav-pill { padding: 6px 12px; border-radius: 10px; border: 1px solid var(--border-color); background: #f1f5f9; font-weight: bold; font-size: 11px; cursor: pointer; white-space: nowrap; }
+        .nav-pill.active { background: #0284c7; color: white; border-color: #0284c7; }
+    </style>
+</head>
+<body>
+
+    <div class="top-bar">
+        <div class="header-title-group">
+            <button class="menu-btn" onclick="toggleDrawer()">☰</button>
+            <span class="header-title">Master Admin</span>
+            <span class="role-badge">COMMISSION</span>
+        </div>
+        <div class="header-actions">
+            <button class="btn-header btn-diag" onclick="checkSystemData()">⚡ System Data</button>
+            <button class="btn-header btn-logout" onclick="logoutAdmin()">Log Out</button>
+        </div>
+    </div>
+
+    <!-- MODERN MODAL -->
+    <div class="modal-overlay" id="customAlertModal">
+        <div class="modal-box">
+            <h3 class="modal-title" id="customAlertTitle">Notice</h3>
+            <p class="modal-body" id="customAlertMessage">Message goes here...</p>
+            <div class="modal-actions" id="customAlertActions">
+                <button class="action-btn" style="margin-top:0;" onclick="closeCustomAlert()">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="drawer-overlay" id="drawerOverlay" onclick="toggleDrawer()"></div>
+    <div class="drawer" id="sidebarDrawer">
+        <h3>🏛️ Commission Controls</h3>
+        <ul class="drawer-nav">
+            <li class="active" onclick="switchTab('tab-dashboard')">📊 Live Dashboard Stats</li>
+            <li onclick="switchTab('tab-leaderboard')">🏆 Leaderboard & Standings</li>
+            <li onclick="switchTab('tab-inspection')">🔍 Voter Inspection Portal</li>
+            <li onclick="switchTab('tab-booths')">🏢 Polling Booth Setup</li>
+            <li onclick="switchTab('tab-schedule')">🗓️ Schedule Gazette</li>
+            <li onclick="switchTab('tab-voters')">👥 Voter Management</li>
+            <li onclick="switchTab('tab-parties')">🗳️ Party & Candidate Setup</li>
+            <li onclick="switchTab('tab-history-hub')">📜 3-Category History Hub</li>
+            <li onclick="switchTab('tab-admin-sys')">⚙️ System & Security Settings</li>
+        </ul>
+    </div>
+
+    <!-- DIAGNOSTICS MODAL -->
+    <div class="modal-overlay" id="systemDiagModal">
+        <div class="modal-box" style="text-align:left;">
+            <h3 class="modal-title">⚡ Live System Diagnostics</h3>
+            <div id="systemDiagContent" style="font-size:12px; line-height:1.5; color:#334155; background:#f8fafc; padding:12px; border-radius:12px; border:1px solid var(--border-color); margin-bottom:14px;"></div>
+            <button class="action-btn" style="background:#16a34a; margin-top:0;" onclick="confirmAndReloadDiagnostics()">Confirm & Reload System 🔄</button>
+        </div>
+    </div>
+
+    <!-- EDIT CANDIDATE MODAL -->
+    <div class="modal-overlay" id="editCandModal">
+        <div class="modal-box" style="text-align:left;">
+            <h3 class="modal-title">✏️ Edit Candidate Details</h3>
+            <input type="hidden" id="editCandParty" />
+            <input type="hidden" id="editCandId" />
+            
+            <label>Candidate Name:</label>
+            <input type="text" id="editCandName" />
+
+            <label>Assigned Booth Scope:</label>
+            <select id="editCandBooth"><option value="ALL">ALL BOOTHS (Global Candidate)</option></select>
+
+            <div style="display:flex; gap:8px; margin-top:14px;">
+                <button class="action-btn" onclick="saveEditedCandidate()" style="flex:1; margin-top:0;">Save</button>
+                <button class="action-btn danger-btn" onclick="closeEditCandModal()" style="flex:1; margin-top:0;">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+
+        <!-- TAB 1: DASHBOARD STATS -->
+        <div id="tab-dashboard" class="tab-content">
+            <div class="card">
+                <h3>📊 Live System Turnout & Real-Time Stats</h3>
+                <div class="stat-grid">
+                    <div class="stat-box"><h4>Total Voters</h4><p id="statTotalVoters">0</p></div>
+                    <div class="stat-box"><h4>Votes Cast</h4><p id="statVotesCast">0</p></div>
+                    <div class="stat-box"><h4>Active Booths</h4><p id="statActiveBooths">0</p></div>
+                    <div class="stat-box"><h4>Turnout</h4><p id="statTurnout">0.0%</p></div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>📜 Schedule Ledger & Active Windows</h3>
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr><th>Title / Scope</th><th>Timings</th><th>Turnout</th><th>Status</th><th>Actions</th></tr>
+                        </thead>
+                        <tbody id="schedulesTableBody"><tr><td colspan="5">Loading schedules...</td></tr></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 2: LEADERBOARD -->
+        <div id="tab-leaderboard" class="tab-content" style="display:none;">
+            <div class="card">
+                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:12px;">
+                    <h3 style="margin:0;">🏆 Comprehensive Election Leaderboards</h3>
+                    <button class="btn-sm danger-btn" onclick="resetLeaderboardVotes()" style="padding:7px 12px; font-weight:800;">🔄 Reset Votes & Save Archive</button>
+                </div>
+
+                <div class="nav-pills">
+                    <button class="nav-pill active" id="pillLeaderSub1" onclick="switchLeaderboardSubPage(1)">📊 1. Vote Counts & %</button>
+                    <button class="nav-pill" id="pillLeaderSub2" onclick="switchLeaderboardSubPage(2)">👤 2. Parties & Candidates</button>
+                    <button class="nav-pill" id="pillLeaderSub3" onclick="switchLeaderboardSubPage(3)">🏢 3. Booth-Wise Leaderboard</button>
+                </div>
+
+                <!-- SUB-PAGE 1 -->
+                <div id="leaderSubPage1">
+                    <p style="font-size:12px; color:#64748b; margin-top:0;">Overall vote tallies including party shares, separate NOTA, and separate NST counts.</p>
+                    <div class="table-responsive">
+                        <table>
+                            <thead>
+                                <tr><th>Rank</th><th>Party / Option</th><th>Leader Name</th><th>Total Votes</th><th>Vote Share (%)</th></tr>
+                            </thead>
+                            <tbody id="leaderSub1TableBody"><tr><td colspan="5">Loading vote metrics...</td></tr></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- SUB-PAGE 2 -->
+                <div id="leaderSubPage2" style="display:none;">
+                    <p style="font-size:12px; color:#64748b; margin-top:0;">Dedicated view showing each registered party alongside their nominated candidates.</p>
+                    <div class="table-responsive">
+                        <table>
+                            <thead>
+                                <tr><th>Party Name</th><th>Leader Name</th><th>Nominated Candidate Name</th><th>Booth Scope</th></tr>
+                            </thead>
+                            <tbody id="leaderSub2TableBody"><tr><td colspan="4">Loading party registries...</td></tr></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- SUB-PAGE 3 -->
+                <div id="leaderSubPage3" style="display:none;">
+                    <p style="font-size:12px; color:#64748b; margin-top:0;">Granular turnout and standing breakdown per polling booth station with separate NOTA & NST counts.</p>
+                    <div id="boothWiseLeaderboardContainer">Loading booth-wise standings...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 3: VOTER INSPECTION PORTAL -->
+        <div id="tab-inspection" class="tab-content" style="display:none;">
+            <div class="card">
+                <h3>🔍 Detailed Voter Inspection & Photo Audit</h3>
+                <label>Search 6-Digit Voter ID:</label>
+                <div style="display:flex; gap:6px;">
+                    <input type="text" id="auditSearchVoterId" maxlength="6" placeholder="e.g. 123456" style="margin:0;" />
+                    <button class="action-btn" style="white-space:nowrap; margin-top:0; width:auto;" onclick="inspectVoterRecord()">Search</button>
+                </div>
+                <div id="voterAuditDetails" style="margin-top:12px;"></div>
+            </div>
+
+            <div class="card">
+                <h3>📜 Complete Voted Audit Trail</h3>
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr><th>Voter ID</th><th>Name</th><th>Phone</th><th>Assigned Booth</th><th>Voted Booth</th><th>Time</th><th>Verification Photo</th></tr>
+                        </thead>
+                        <tbody id="votedAuditTableBody"><tr><td colspan="7">Loading verification audit...</td></tr></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 4: POLLING BOOTH SETUP -->
+        <div id="tab-booths" class="tab-content" style="display:none;">
+            <div class="card">
+                <h3>🏢 Create Polling Booth Station</h3>
+                <label>Booth Code (e.g. 101 or BOOTH-101):</label><input type="text" id="newBoothCode" placeholder="e.g. BOOTH-101" />
+                <label>Location Room Number / Building:</label><input type="text" id="newBoothLocation" placeholder="e.g. Room 125" />
+                <label>Polling Station Head Name:</label><input type="text" id="newBoothHead" placeholder="e.g. Officer Ansh" />
+                <label>One-Time Start Password:</label><input type="password" id="newBoothStartPass" value="123" />
+                <label>Session Relogin Password:</label><input type="password" id="newBoothSessPass" value="123" />
+                <label>End Audit Password:</label><input type="password" id="newBoothEndPass" value="123" />
+                <button class="action-btn" onclick="createBooth()">Create Booth Station</button>
+            </div>
+
+            <div class="card">
+                <h3>🏢 Registered Booths List & Master Admin Controls</h3>
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr><th>Booth Code</th><th>Location</th><th>Head Name</th><th>Status</th><th>Master Override</th></tr>
+                        </thead>
+                        <tbody id="boothsListBody"><tr><td colspan="5">Loading booths...</td></tr></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 5: SCHEDULE GAZETTE -->
+        <div id="tab-schedule" class="tab-content" style="display:none;">
+            <div class="card">
+                <h3>🗓️ Publish Official Polling Schedule</h3>
+                <label>Target Scope:</label>
+                <select id="schedTargetScope"><option value="ALL">ALL BOOTHS (Global Schedule)</option></select>
+                <label>Schedule Title:</label><input type="text" id="schedTitle" value="Official Polling Schedule" />
+                <label>Start Time:</label><input type="datetime-local" id="schedStartTime" />
+                <label>End Time:</label><input type="datetime-local" id="schedEndTime" />
+                <button class="action-btn" onclick="publishSchedule()">Publish & Enforce Schedule</button>
+            </div>
+        </div>
+
+        <!-- TAB 6: VOTER MANAGEMENT -->
+        <div id="tab-voters" class="tab-content" style="display:none;">
+            <div class="nav-pills">
+                <button class="nav-pill active" id="pillVoterSub1" onclick="switchVoterSubPage(1)">👤 Add Single</button>
+                <button class="nav-pill" id="pillVoterSub2" onclick="switchVoterSubPage(2)">📥 Bulk Import</button>
+                <button class="nav-pill" id="pillVoterSub3" onclick="switchVoterSubPage(3)">🔄 Status & Row Shift</button>
+                <button class="nav-pill" id="pillVoterSub4" onclick="switchVoterSubPage(4)">📋 Registry Table</button>
+            </div>
+
+            <div id="voterSubPage1" class="card">
+                <h3>👥 Page 1: Add Single Voter (6-Digit Requirement)</h3>
+                <label>Voter ID (Exactly 6 Digits):</label><input type="text" id="voterIdInput" maxlength="6" placeholder="e.g. 123456" />
+                <label>Full Name:</label><input type="text" id="voterNameInput" placeholder="Full Name" />
+                <label>College / Department:</label><input type="text" id="voterCollegeInput" placeholder="Tech / Management" />
+                <label>Phone Number:</label><input type="text" id="voterPhoneInput" placeholder="9876543210" />
+                <label>Assigned Booth:</label><input type="text" id="voterBoothInput" placeholder="BOOTH-101 or UNASSIGNED" />
+                <button class="action-btn" onclick="addSingleVoter()">Register Voter</button>
+            </div>
+
+            <div id="voterSubPage2" class="card" style="display:none;">
+                <h3>📥 Page 2: Bulk Voter Import</h3>
+                <label>Paste Rows (Format: 123456 - John Doe, Tech, 9876543210):</label>
+                <textarea id="bulkVotersText" rows="4" placeholder="123456 - John Doe, Tech, 9876543210"></textarea>
+                <label>Default Assigned Booth:</label><input type="text" id="bulkVoterBooth" placeholder="BOOTH-101" />
+                <button class="action-btn" onclick="importBulkVoters()">Import Bulk Voters</button>
+            </div>
+
+            <div id="voterSubPage3" class="card" style="display:none;">
+                <h3>🔄 Page 3: Row-Wise Voter Status Shift (Voted ➔ Unvoted)</h3>
+                <p style="font-size:12px; color:#64748b; margin-top:0;">Paste row-wise 6-digit Voter IDs below (one per line) to instantly shift their status back from <b>VOTED</b> to <b>PENDING/UNVOTED</b> and clear their ballot record.</p>
+                <label>Paste Voter IDs (Row-Wise):</label>
+                <textarea id="rowWiseResetText" rows="5" placeholder="123456&#10;123457&#10;123458"></textarea>
+                <button class="action-btn" style="background:#ca8a04;" onclick="executeRowWiseReset()">Shift Status Back to Unvoted 🔄</button>
+            </div>
+
+            <div id="voterSubPage4" class="card" style="display:none;">
+                <h3>
+                    <span>📋 Page 4: Editable Voter Registry</span>
+                    <button class="btn-sm btn-del" onclick="clearAllVoters()">Clear Registry</button>
+                </h3>
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr><th>6-Digit ID</th><th>Name</th><th>College</th><th>Phone</th><th>Assigned Booth</th><th>Status</th><th>Actions</th></tr>
+                        </thead>
+                        <tbody id="voterRegistryBody"><tr><td colspan="7">Loading registry...</td></tr></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 7: PARTY & EDITABLE CANDIDATE SYSTEM -->
+        <div id="tab-parties" class="tab-content" style="display:none;">
+            <div class="nav-pills">
+                <button class="nav-pill active" id="pillPartySub1" onclick="switchPartySubPage(1)">🗳️ Add Party</button>
+                <button class="nav-pill" id="pillPartySub2" onclick="switchPartySubPage(2)">👤 Add Candidate</button>
+                <button class="nav-pill" id="pillPartySub3" onclick="switchPartySubPage(3)">📜 Party & Candidates Table</button>
+            </div>
+
+            <div id="partySubPage1" class="card">
+                <h3>🗳️ Page 1: Add Political Party</h3>
+                <label>Party Name:</label><input type="text" id="partyNameInput" placeholder="e.g. BJP / CJP" />
+                <label>Party Head / Leader Name:</label><input type="text" id="partyLeaderInput" placeholder="Leader Full Name" />
+                <button class="action-btn" onclick="addParty()">Register Party Head</button>
+            </div>
+
+            <div id="partySubPage2" class="card" style="display:none;">
+                <h3>👤 Page 2: Add Candidate & Assign Poll Booth</h3>
+                <label>Select Registered Party:</label>
+                <select id="candPartySelect"><option value="">-- Select Registered Party --</option></select>
+                <label>Candidate Full Name:</label><input type="text" id="candNameInput" placeholder="Candidate Name" />
+                <label>Assigned Polling Booth:</label>
+                <select id="candBoothSelect"><option value="ALL">ALL BOOTHS (Global Candidate)</option></select>
+                <button class="action-btn" onclick="addCandidateToParty()">Assign Candidate to Booth</button>
+            </div>
+
+            <div id="partySubPage3" class="card" style="display:none;">
+                <h3>🗳️ Registered Political Parties & Editable Candidates</h3>
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr><th>Party Name</th><th>Leader Name</th><th>Candidate Name</th><th>Assigned Booth</th><th>Actions</th></tr>
+                        </thead>
+                        <tbody id="partiesListBody"><tr><td colspan="5">Loading parties...</td></tr></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 8: 3-CATEGORY HISTORY HUB WITH ARCHIVES SUBVIEW -->
+        <div id="tab-history-hub" class="tab-content" style="display:none;">
+            <div class="card">
+                <h3>📜 Election Commission History Hub</h3>
+                <div class="nav-pills">
+                    <button class="nav-pill active" id="pillHistSub1" onclick="switchHistorySubView('voters')">👥 Voters</button>
+                    <button class="nav-pill" id="pillHistSub2" onclick="switchHistorySubView('system')">⚙️ System</button>
+                    <button class="nav-pill" id="pillHistSub3" onclick="switchHistorySubView('schedule')">🗓️ Schedules</button>
+                    <button class="nav-pill" id="pillHistSub4" onclick="switchHistorySubView('archives')">📦 Archives</button>
+                </div>
+
+                <div id="historySubViewVoters">
+                    <div class="table-responsive">
+                        <table>
+                            <thead><tr><th>Voter ID</th><th>Name</th><th>College</th><th>Phone</th><th>Assigned Booth</th><th>Voted Booth</th><th>Status</th></tr></thead>
+                            <tbody id="histVotersBody"><tr><td colspan="7">Loading voter history...</td></tr></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div id="historySubViewSystem" style="display:none;">
+                    <div class="table-responsive">
+                        <table>
+                            <thead><tr><th>Timestamp</th><th>Event Type</th><th>Description</th><th>Initiated By</th></tr></thead>
+                            <tbody id="histSystemBody"><tr><td colspan="4">Loading system audit history...</td></tr></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div id="historySubViewSchedule" style="display:none;">
+                    <div class="table-responsive">
+                        <table>
+                            <thead><tr><th>Title / Scope</th><th>Timings</th><th>Turnout</th><th>Status</th></tr></thead>
+                            <tbody id="histScheduleBody"><tr><td colspan="4">Loading schedule history...</td></tr></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- ARCHIVES SUBVIEW -->
+                <div id="historySubViewArchives" style="display:none;">
+                    <p style="font-size:12px; color:#64748b; margin-top:0;">Saved snapshots of leaderboard votes whenever a reset was triggered.</p>
+                    <div class="table-responsive">
+                        <table>
+                            <thead><tr><th>Archived Timestamp</th><th>Total Votes Saved</th><th>Snapshot Details</th></tr></thead>
+                            <tbody id="histArchivesBody"><tr><td colspan="3">Loading saved archives...</td></tr></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div style="margin-top:12px; text-align:right;">
+                    <button class="action-btn danger-btn" style="width:auto; padding:8px 14px;" onclick="clearMasterHistory()">Master Clear History & Closed Logs</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 9: SYSTEM ADMIN & SECURITY SETTINGS -->
+        <div id="tab-admin-sys" class="tab-content" style="display:none;">
+            <div class="card">
+                <h3>🔑 Security Credentials Management</h3>
+                <label>Old Admin Username:</label><input type="text" id="secOldUser" value="Ansh" />
+                <label>Old Admin Password:</label><input type="password" id="secOldPass" />
+                <label>New Admin Username:</label><input type="text" id="secNewUser" />
+                <label>New Admin Password:</label><input type="password" id="secNewPass" />
+                <button class="action-btn" onclick="changeAdminCredentials()">Update Admin Credentials</button>
+            </div>
+
+            <div class="card">
+                <h3>🚨 Emergency Global Election Halt</h3>
+                <p style="font-size:12px; color:#dc2626; font-weight:bold;">Instantly freezes and locks all active polling kiosks across every booth station.</p>
+                <button class="action-btn danger-btn" onclick="triggerEmergencyHalt()">HALT ALL BOOTHS NOW</button>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        let cachedSchedules = [];
+        let cachedParties = [];
+        let adminAuthToken = localStorage.getItem('adminToken');
+        let currentConfirmCallback = null;
+
+        function showModalAlert(title, message, callback = null) {
+            document.getElementById('customAlertTitle').innerText = title;
+            document.getElementById('customAlertMessage').innerText = message;
+            document.getElementById('customAlertActions').innerHTML = `<button class="action-btn" style="margin-top:0;" onclick="closeCustomAlert()">OK</button>`;
+            document.getElementById('customAlertModal').style.display = 'flex';
+            currentConfirmCallback = callback;
+        }
+
+        function showModalConfirm(title, message, onYes) {
+            document.getElementById('customAlertTitle').innerText = title;
+            document.getElementById('customAlertMessage').innerText = message;
+            document.getElementById('customAlertActions').innerHTML = `
+                <button class="action-btn danger-btn" style="margin-top:0; flex:1;" onclick="closeCustomAlert()">Cancel</button>
+                <button class="action-btn" style="margin-top:0; flex:1;" onclick="executeConfirm()">Confirm</button>
+            `;
+            document.getElementById('customAlertModal').style.display = 'flex';
+            currentConfirmCallback = onYes;
+        }
+
+        function executeConfirm() {
+            const fn = currentConfirmCallback;
+            closeCustomAlert();
+            if (typeof fn === 'function') fn();
+        }
+
+        function closeCustomAlert() {
+            document.getElementById('customAlertModal').style.display = 'none';
+            const fn = currentConfirmCallback;
+            currentConfirmCallback = null;
+            if (typeof fn === 'function' && fn.isAlertCallback) {
+                fn();
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            if (!adminAuthToken) {
+                const cb = () => { window.location.href = '/admin-login.html'; };
+                cb.isAlertCallback = true;
+                showModalAlert("Unauthorized", "Please log in as Master Admin.", cb);
+                return;
+            }
+
+            loadDashboard();
+            loadBoothsList();
+            loadVotersList();
+            loadPartiesList();
+            loadLeaderboard();
+            setInterval(loadDashboard, 10000);
+        });
+
+        async function fetchWithAdminAuth(url, options = {}) {
+            options.headers = options.headers || {};
+            options.headers['x-admin-token'] = adminAuthToken;
+            options.headers['x-user-role'] = 'admin';
+
+            const res = await fetch(url, options);
+            if (res.status === 401) {
+                const cb = () => {
+                    localStorage.clear();
+                    window.location.href = '/admin-login.html';
+                };
+                cb.isAlertCallback = true;
+                showModalAlert("Session Expired", "Master Admin session expired. Please log in again.", cb);
+            }
+            return res;
+        }
+
+        function toggleDrawer() {
+            const drawer = document.getElementById('sidebarDrawer');
+            const overlay = document.getElementById('drawerOverlay');
+            if (drawer.classList.contains('open')) {
+                drawer.classList.remove('open');
+                overlay.style.display = 'none';
+            } else {
+                drawer.classList.add('open');
+                overlay.style.display = 'block';
+            }
+        }
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(t => t.style.display = 'none');
+            document.getElementById(tabId).style.display = 'block';
+            toggleDrawer();
+            if (tabId === 'tab-booths') loadBoothsList();
+            if (tabId === 'tab-voters') loadVotersList();
+            if (tabId === 'tab-parties') loadPartiesList();
+            if (tabId === 'tab-leaderboard') loadLeaderboard();
+            if (tabId === 'tab-history-hub') loadHistoryHub('voters');
+            if (tabId === 'tab-inspection') loadVotedAudit();
+        }
+
+        function switchVoterSubPage(pageNo) {
+            document.querySelectorAll('#tab-voters .nav-pills button').forEach(b => b.classList.remove('active'));
+            document.getElementById(`pillVoterSub${pageNo}`).classList.add('active');
+            document.getElementById('voterSubPage1').style.display = pageNo === 1 ? 'block' : 'none';
+            document.getElementById('voterSubPage2').style.display = pageNo === 2 ? 'block' : 'none';
+            document.getElementById('voterSubPage3').style.display = pageNo === 3 ? 'block' : 'none';
+            document.getElementById('voterSubPage4').style.display = pageNo === 4 ? 'block' : 'none';
+        }
+
+        function switchPartySubPage(pageNo) {
+            document.querySelectorAll('#tab-parties .nav-pills button').forEach(b => b.classList.remove('active'));
+            document.getElementById(`pillPartySub${pageNo}`).classList.add('active');
+            document.getElementById('partySubPage1').style.display = pageNo === 1 ? 'block' : 'none';
+            document.getElementById('partySubPage2').style.display = pageNo === 2 ? 'block' : 'none';
+            document.getElementById('partySubPage3').style.display = pageNo === 3 ? 'block' : 'none';
+        }
+
+        function switchLeaderboardSubPage(pageNo) {
+            document.querySelectorAll('#tab-leaderboard .nav-pills button').forEach(b => b.classList.remove('active'));
+            document.getElementById(`pillLeaderSub${pageNo}`).classList.add('active');
+            document.getElementById('leaderSubPage1').style.display = pageNo === 1 ? 'block' : 'none';
+            document.getElementById('leaderSubPage2').style.display = pageNo === 2 ? 'block' : 'none';
+            document.getElementById('leaderSubPage3').style.display = pageNo === 3 ? 'block' : 'none';
+        }
+
+        function logoutAdmin() { localStorage.clear(); window.location.href = '/admin-login.html'; }
+
+        async function checkSystemData() {
+            const res = await fetchWithAdminAuth('/api/admin/check-system-data');
+            const d = await res.json();
+
+            let boothHTML = d.boothsSummary.map(b => `• <b>${b.code}:</b> ${b.location} (${b.status})`).join('<br>');
+            document.getElementById('systemDiagContent').innerHTML = `
+                <p><strong>Database Health:</strong> <span style="color:#16a34a; font-weight:bold;">${d.databaseStatus}</span></p>
+                <p><strong>Server Uptime:</strong> ${d.serverUptimeSeconds} seconds</p>
+                <p><strong>Total Voters / Cast:</strong> ${d.totalRegisteredVoters} / ${d.totalVotesCast} (${d.turnoutPercentage})</p>
+                <hr style="border:0; border-top:1px solid #cbd5e1; margin:8px 0;">
+                <p><strong>Booths Status:</strong><br>${boothHTML || 'No booths created'}</p>
+            `;
+            document.getElementById('systemDiagModal').style.display = 'flex';
+        }
+
+        function confirmAndReloadDiagnostics() {
+            document.getElementById('systemDiagModal').style.display = 'none';
+            window.location.reload();
+        }
+
+        async function loadDashboard() {
+            const statsRes = await fetchWithAdminAuth('/api/admin/dashboard-stats');
+            const stats = await statsRes.json();
+            document.getElementById('statTotalVoters').innerText = stats.totalVoters || 0;
+            document.getElementById('statVotesCast').innerText = stats.totalVotesCast || 0;
+            document.getElementById('statActiveBooths').innerText = stats.activeBooths || 0;
+            document.getElementById('statTurnout').innerText = `${stats.turnout || 0}%`;
+
+            const schedRes = await fetchWithAdminAuth('/api/admin/schedules/history');
+            cachedSchedules = await schedRes.json();
+            let sHTML = '';
+            cachedSchedules.forEach(s => {
+                const statusBadge = s.status === 'ACTIVE' ? 'badge-active' : 'badge-closed';
+                sHTML += `
+                    <tr>
+                        <td><b>${s.title}</b><br><small>Scope: ${s.targetBooth}</small></td>
+                        <td>${s.startTime}<br>to ${s.endTime}</td>
+                        <td><b>${s.totalVotesCast} votes</b> (${s.turnoutPercentage}%)</td>
+                        <td><span class="badge ${statusBadge}">${s.status}</span></td>
+                        <td>
+                            <button class="btn-sm btn-edit" onclick="openEditScheduleModal('${s._id}')">Edit</button>
+                            <button class="btn-sm btn-del" onclick="deleteSchedule('${s._id}')">X</button>
+                        </td>
+                    </tr>
+                `;
+            });
+            document.getElementById('schedulesTableBody').innerHTML = sHTML || '<tr><td colspan="5">No schedules recorded.</td></tr>';
+        }
+
+        async function loadLeaderboard() {
+            const res = await fetchWithAdminAuth('/api/admin/analytics');
+            const data = await res.json();
+            
+            const partiesRes = await fetchWithAdminAuth('/api/parties');
+            const partiesList = await partiesRes.json();
+
+            let sub1HTML = '';
+            (data.leaderboard || []).forEach((p, idx) => {
+                sub1HTML += `
+                    <tr>
+                        <td><b>#${idx + 1}</b></td>
+                        <td><b>${p.party_name}</b></td>
+                        <td>${p.leader_name}</td>
+                        <td><b>${p.count}</b></td>
+                        <td>${p.percentage}%</td>
+                    </tr>
+                `;
+            });
+            document.getElementById('leaderSub1TableBody').innerHTML = sub1HTML || '<tr><td colspan="5">No votes cast yet.</td></tr>';
+
+            let sub2HTML = '';
+            partiesList.forEach(p => {
+                if (!p.candidates || p.candidates.length === 0) {
+                    sub2HTML += `
+                        <tr>
+                            <td><b>${p.party_name}</b></td>
+                            <td>${p.leader_name}</td>
+                            <td style="color:#94a3b8; font-style:italic;">No candidates nominated</td>
+                            <td>-</td>
+                        </tr>
+                    `;
+                } else {
+                    p.candidates.forEach((c, idx) => {
+                        sub2HTML += `
+                            <tr>
+                                ${idx === 0 ? `<td rowspan="${p.candidates.length}"><b>${p.party_name}</b></td><td rowspan="${p.candidates.length}">${p.leader_name}</td>` : ''}
+                                <td><b>${c.candidateName}</b></td>
+                                <td><span class="badge badge-pending">${c.assignedBooth}</span></td>
+                            </tr>
+                        `;
+                    });
+                }
+            });
+            document.getElementById('leaderSub2TableBody').innerHTML = sub2HTML || '<tr><td colspan="4">No parties registered.</td></tr>';
+
+            let sub3HTML = '';
+            const breakdown = data.boothBreakdown || {};
+            const boothCodes = Object.keys(breakdown);
+
+            if (boothCodes.length === 0) {
+                sub3HTML = '<p style="font-size:12px; color:#64748b; font-style:italic;">No polling booths created yet.</p>';
+            } else {
+                boothCodes.forEach(bCode => {
+                    const b = breakdown[bCode];
+                    let candRows = '';
+                    (b.candidateList || []).forEach(c => {
+                        candRows += `<tr><td>${c.party_name}</td><td><b>${c.votes} votes</b></td></tr>`;
+                    });
+
+                    sub3HTML += `
+                        <div style="background:#f8fafc; border:1px solid var(--border-color); border-radius:12px; padding:12px; margin-bottom:12px;">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                                <strong>🏢 ${bCode} (${b.location})</strong>
+                                <span class="badge ${b.status === 'ACTIVE' ? 'badge-active' : (b.status === 'CLOSED' ? 'badge-closed' : 'badge-pending')}">${b.status || 'PENDING'}</span>
+                            </div>
+                            <p style="font-size:11px; color:#64748b; margin:2px 0;"><b>Head:</b> ${b.head_name} | <b>Total Votes:</b> ${b.total} | <b>NOTA:</b> ${b.nota} | <b>NST:</b> ${b.nst}</p>
+                            <div class="table-responsive" style="margin-top:6px;">
+                                <table>
+                                    <thead><tr><th>Party / Option</th><th>Votes Count</th></tr></thead>
+                                    <tbody>${candRows || '<tr><td colspan="2">No votes recorded at this booth.</td></tr>'}</tbody>
+                                </table>
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+            document.getElementById('boothWiseLeaderboardContainer').innerHTML = sub3HTML;
+        }
+
+        async function resetLeaderboardVotes() {
+            showModalConfirm("Reset Leaderboard", "Reset all current votes and save a snapshot to the History Archive?", async () => {
+                const res = await fetchWithAdminAuth('/api/admin/reset-leaderboard-votes', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    showModalAlert("Reset Successful", data.message || "Leaderboard votes reset and archived!");
+                    loadLeaderboard();
+                    loadDashboard();
+                } else {
+                    showModalAlert("Error", data.error || "Failed to reset leaderboard votes.");
+                }
+            });
+        }
+
+        async function loadBoothsList() {
+            const res = await fetchWithAdminAuth('/api/admin/booths');
+            const booths = await res.json();
+            const scopeSelects = [
+                document.getElementById('schedTargetScope'), 
+                document.getElementById('editSchedScope'), 
+                document.getElementById('candBoothSelect'),
+                document.getElementById('editCandBooth')
+            ];
+
+            scopeSelects.forEach(sel => {
+                if (!sel) return;
+                sel.innerHTML = '<option value="ALL">ALL BOOTHS (Global Scope)</option>';
+                booths.forEach(b => {
+                    sel.innerHTML += `<option value="${b.booth_code}">${b.booth_code} (${b.location})</option>`;
+                });
+            });
+
+            let bHTML = '';
+            booths.forEach(b => {
+                const badgeClass = b.status === 'ACTIVE' ? 'badge-active' : (b.status === 'PENDING' ? 'badge-pending' : 'badge-closed');
+                bHTML += `
+                    <tr>
+                        <td><b>${b.booth_code}</b></td>
+                        <td>${b.location}</td>
+                        <td>${b.head_name}</td>
+                        <td><span class="badge ${badgeClass}">${b.status || 'PENDING'}</span></td>
+                        <td>
+                            <button class="btn-sm btn-edit" onclick="overrideBooth('${b.booth_code}', 'START')">Start</button>
+                            <button class="btn-sm btn-del" onclick="overrideBooth('${b.booth_code}', 'STOP')">Stop</button>
+                        </td>
+                    </tr>
+                `;
+            });
+            document.getElementById('boothsListBody').innerHTML = bHTML || '<tr><td colspan="5">No booths registered.</td></tr>';
+        }
+
+        async function createBooth() {
+            const boothCode = document.getElementById('newBoothCode').value.trim();
+            const location = document.getElementById('newBoothLocation').value.trim();
+            const headName = document.getElementById('newBoothHead').value.trim();
+            const startPassword = document.getElementById('newBoothStartPass').value.trim();
+            const sessionPassword = document.getElementById('newBoothSessPass').value.trim();
+            const endPassword = document.getElementById('newBoothEndPass').value.trim();
+
+            const res = await fetchWithAdminAuth('/api/admin/create-booth', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ boothCode, location, headName, startPassword, sessionPassword, endPassword })
+            });
+
+            const data = await res.json();
+            if (res.ok) { 
+                showModalAlert("Success", "Booth Station Created Successfully!"); 
+                loadBoothsList(); 
+            } else {
+                showModalAlert("Error", data.error || "Failed to create booth.");
+            }
+        }
+
+        async function overrideBooth(boothCode, action) {
+            const res = await fetchWithAdminAuth('/api/admin/override-booth-status', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ boothCode, action })
+            });
+            if (res.ok) loadBoothsList();
+        }
+
+        async function triggerEmergencyHalt() {
+            showModalConfirm("Emergency Halt", "Lock all voting kiosks and booths immediately?", async () => {
+                await overrideBooth('ALL', 'HALT_ALL');
+                showModalAlert("Halted", "EMERGENCY ELECTION HALT EXECUTED.");
+                loadBoothsList();
+            });
+        }
+
+        async function publishSchedule() {
+            const targetBooth = document.getElementById('schedTargetScope').value;
+            const title = document.getElementById('schedTitle').value.trim();
+            const startTime = document.getElementById('schedStartTime').value;
+            const endTime = document.getElementById('schedEndTime').value;
+
+            if (!startTime || !endTime) {
+                showModalAlert("Validation Error", "Please select Start and End Times!");
+                return;
+            }
+
+            const res = await fetchWithAdminAuth('/api/admin/schedules/publish', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ targetBooth, title, startTime, endTime })
+            });
+
+            if (res.ok) { 
+                showModalAlert("Success", "Schedule Enforced Successfully!"); 
+                loadDashboard(); 
+            }
+        }
+
+        function openEditScheduleModal(id) {
+            const sched = cachedSchedules.find(s => s._id === id);
+            if (!sched) return;
+
+            document.getElementById('editSchedId').value = sched._id;
+            document.getElementById('editSchedTitle').value = sched.title || 'Official Polling Schedule';
+            document.getElementById('editSchedScope').value = sched.targetBooth || 'ALL';
+            
+            if (sched.startTime) document.getElementById('editSchedStart').value = new Date(sched.startTime).toISOString().slice(0, 16);
+            if (sched.endTime) document.getElementById('editSchedEnd').value = new Date(sched.endTime).toISOString().slice(0, 16);
+
+            document.getElementById('editScheduleModal').style.display = 'flex';
+        }
+
+        function closeEditModal() { document.getElementById('editScheduleModal').style.display = 'none'; }
+
+        async function saveEditedSchedule() {
+            const id = document.getElementById('editSchedId').value;
+            const title = document.getElementById('editSchedTitle').value.trim();
+            const targetBooth = document.getElementById('editSchedScope').value;
+            const startTime = document.getElementById('editSchedStart').value;
+            const endTime = document.getElementById('editSchedEnd').value;
+
+            const res = await fetchWithAdminAuth('/api/admin/schedules/edit', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id, title, targetBooth, startTime, endTime })
+            });
+
+            if (res.ok) { 
+                showModalAlert("Success", "Schedule Revised Successfully!"); 
+                closeEditModal(); 
+                loadDashboard(); 
+            }
+        }
+
+        async function deleteSchedule(id) {
+            showModalConfirm("Delete Schedule", "Delete this schedule entry?", async () => {
+                await fetchWithAdminAuth('/api/admin/schedules/delete', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id })
+                });
+                loadDashboard();
+            });
+        }
+
+        async function loadVotersList() {
+            const res = await fetchWithAdminAuth('/api/admin/voters');
+            const votersList = await res.json();
+            let vHTML = '';
+            votersList.forEach(v => {
+                vHTML += `
+                    <tr>
+                        <td><b>${v.voter_id}</b></td>
+                        <td>${v.full_name}</td>
+                        <td>${v.college || 'N/A'}</td>
+                        <td>${v.phone || 'N/A'}</td>
+                        <td>${v.assigned_booth}</td>
+                        <td><span class="badge ${v.has_voted ? 'badge-active' : 'badge-pending'}">${v.has_voted ? 'VOTED' : 'PENDING'}</span></td>
+                        <td><button class="btn-sm btn-del" onclick="deleteVoter('${v._id}')">X</button></td>
+                    </tr>
+                `;
+            });
+            document.getElementById('voterRegistryBody').innerHTML = vHTML || '<tr><td colspan="7">No voters registered.</td></tr>';
+        }
+
+        async function addSingleVoter() {
+            const voterId = document.getElementById('voterIdInput').value.trim();
+            const fullName = document.getElementById('voterNameInput').value.trim();
+            const college = document.getElementById('voterCollegeInput').value.trim();
+            const phone = document.getElementById('voterPhoneInput').value.trim();
+            const assignedBooth = document.getElementById('voterBoothInput').value.trim();
+
+            if (!voterId || voterId.length !== 6 || isNaN(voterId)) {
+                showModalAlert("Validation Error", "Voter ID must be exactly 6 numeric digits!");
+                return;
+            }
+            if (!fullName) {
+                showModalAlert("Validation Error", "Enter Full Name!");
+                return;
+            }
+
+            const res = await fetchWithAdminAuth('/api/admin/add-voter-profile', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ voterId, fullName, college, phone, assignedBooth })
+            });
+            const data = await res.json();
+            if (res.ok) {
+                showModalAlert("Success", "Voter Registered Successfully!");
+                document.getElementById('voterIdInput').value = "";
+                document.getElementById('voterNameInput').value = "";
+                loadVotersList();
+            } else {
+                showModalAlert("Error", data.error || "Failed to register voter.");
+            }
+        }
+
+        async function importBulkVoters() {
+            const rawRows = document.getElementById('bulkVotersText').value;
+            const defaultBooth = document.getElementById('bulkVoterBooth').value;
+            if (!rawRows.trim()) {
+                showModalAlert("Validation Error", "Paste voter rows first!");
+                return;
+            }
+
+            const res = await fetchWithAdminAuth('/api/admin/bulk-add-voters', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ rawRows, defaultBooth })
+            });
+            if (res.ok) { 
+                showModalAlert("Success", "Bulk Voters Imported Successfully!"); 
+                document.getElementById('bulkVotersText').value = ""; 
+                loadVotersList(); 
+            }
+        }
+
+        async function executeRowWiseReset() {
+            const rawRows = document.getElementById('rowWiseResetText').value.trim();
+            if (!rawRows) {
+                showModalAlert("Validation Error", "Please paste at least one Voter ID!");
+                return;
+            }
+
+            const res = await fetchWithAdminAuth('/api/admin/bulk-reset-voters', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ rawRows })
+            });
+
+            const data = await res.json();
+            if (res.ok) {
+                showModalAlert("Status Shifted", data.message || "Voters shifted back to unvoted successfully!");
+                document.getElementById('rowWiseResetText').value = "";
+                loadVotersList();
+            } else {
+                showModalAlert("Error", data.error || "Failed to shift voter status.");
+            }
+        }
+
+        async function deleteVoter(id) {
+            showModalConfirm("Delete Voter", "Delete voter profile?", async () => {
+                await fetchWithAdminAuth('/api/admin/delete-voter', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id })
+                });
+                loadVotersList();
+            });
+        }
+
+        async function clearAllVoters() {
+            showModalConfirm("Clear Registry", "Clear entire Voter Registry?", async () => {
+                await fetchWithAdminAuth('/api/admin/clear-all-voters', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                loadVotersList();
+            });
+        }
+
+        async function loadPartiesList() {
+            const res = await fetchWithAdminAuth('/api/parties');
+            cachedParties = await res.json();
+            const candSelect = document.getElementById('candPartySelect');
+            candSelect.innerHTML = '<option value="">-- Select Registered Party --</option>';
+
+            let pHTML = '';
+            cachedParties.forEach(p => {
+                candSelect.innerHTML += `<option value="${p.party_name}">${p.party_name} (Head: ${p.leader_name})</option>`;
+                
+                if ((p.candidates || []).length === 0) {
+                    pHTML += `
+                        <tr>
+                            <td><b>${p.party_name}</b></td>
+                            <td>${p.leader_name}</td>
+                            <td colspan="2" style="color:#94a3b8; font-style:italic;">No candidates assigned yet</td>
+                            <td><button class="btn-sm btn-del" onclick="deleteParty('${p._id}')">X</button></td>
+                        </tr>
+                    `;
+                } else {
+                    p.candidates.forEach((c, idx) => {
+                        pHTML += `
+                            <tr>
+                                ${idx === 0 ? `<td rowspan="${p.candidates.length}"><b>${p.party_name}</b></td><td rowspan="${p.candidates.length}">${p.leader_name}</td>` : ''}
+                                <td><b>${c.candidateName}</b></td>
+                                <td><span class="badge badge-pending">${c.assignedBooth}</span></td>
+                                <td>
+                                    <button class="btn-sm btn-edit" onclick="openEditCandModal('${p.party_name}', '${c.candId}', '${c.candidateName}', '${c.assignedBooth}')">Edit</button>
+                                    <button class="btn-sm btn-del" onclick="deleteCandidate('${p.party_name}', '${c.candId}')">X</button>
+                                </td>
+                            </tr>
+                        `;
+                    });
+                }
+            });
+            document.getElementById('partiesListBody').innerHTML = pHTML || '<tr><td colspan="5">No parties registered.</td></tr>';
+        }
+
+        async function addParty() {
+            const partyName = document.getElementById('partyNameInput').value.trim();
+            const leaderName = document.getElementById('partyLeaderInput').value.trim();
+            if (!partyName) {
+                showModalAlert("Validation Error", "Enter Party Name!");
+                return;
+            }
+
+            const res = await fetchWithAdminAuth('/api/admin/add-party', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ partyName, leaderName })
+            });
+            const data = await res.json();
+            if (res.ok) { 
+                showModalAlert("Success", "Party Registered Successfully!"); 
+                document.getElementById('partyNameInput').value = ""; 
+                document.getElementById('partyLeaderInput').value = ""; 
+                loadPartiesList(); 
+            } else {
+                showModalAlert("Error", data.error || "Failed to register party.");
+            }
+        }
+
+        async function addCandidateToParty() {
+            const partyName = document.getElementById('candPartySelect').value;
+            const candidateName = document.getElementById('candNameInput').value.trim();
+            const assignedBooth = document.getElementById('candBoothSelect').value;
+
+            if (!partyName || !candidateName) {
+                showModalAlert("Validation Error", "Select Party and enter Candidate Name!");
+                return;
+            }
+
+            const res = await fetchWithAdminAuth('/api/admin/add-candidate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ partyName, candidateName, assignedBooth })
+            });
+
+            if (res.ok) { 
+                showModalAlert("Success", "Candidate Assigned Successfully!"); 
+                document.getElementById('candNameInput').value = ""; 
+                loadPartiesList(); 
+            }
+        }
+
+        function openEditCandModal(partyName, candId, candidateName, assignedBooth) {
+            document.getElementById('editCandParty').value = partyName;
+            document.getElementById('editCandId').value = candId;
+            document.getElementById('editCandName').value = candidateName;
+            document.getElementById('editCandBooth').value = assignedBooth;
+            document.getElementById('editCandModal').style.display = 'flex';
+        }
+
+        function closeEditCandModal() {
+            document.getElementById('editCandModal').style.display = 'none';
+        }
+
+        async function saveEditedCandidate() {
+            const partyName = document.getElementById('editCandParty').value;
+            const candId = document.getElementById('editCandId').value;
+            const candidateName = document.getElementById('editCandName').value.trim();
+            const assignedBooth = document.getElementById('editCandBooth').value;
+
+            const res = await fetchWithAdminAuth('/api/admin/edit-candidate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ partyName, candId, candidateName, assignedBooth })
+            });
+
+            if (res.ok) { 
+                showModalAlert("Success", "Candidate Details Saved!"); 
+                closeEditCandModal(); 
+                loadPartiesList(); 
+            }
+        }
+
+        async function deleteCandidate(partyName, candId) {
+            showModalConfirm("Delete Candidate", "Delete this candidate?", async () => {
+                await fetchWithAdminAuth('/api/admin/delete-candidate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ partyName, candId })
+                });
+                loadPartiesList();
+            });
+        }
+
+        async function deleteParty(id) {
+            showModalConfirm("Delete Party", "Delete political party?", async () => {
+                await fetchWithAdminAuth('/api/admin/delete-party', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id })
+                });
+                loadPartiesList();
+            });
+        }
+
+        function switchHistorySubView(viewType) {
+            document.querySelectorAll('#tab-history-hub .nav-pill').forEach(p => p.classList.remove('active'));
+            document.getElementById('historySubViewVoters').style.display = 'none';
+            document.getElementById('historySubViewSystem').style.display = 'none';
+            document.getElementById('historySubViewSchedule').style.display = 'none';
+            document.getElementById('historySubViewArchives').style.display = 'none';
+
+            if (viewType === 'voters') {
+                document.getElementById('pillHistSub1').classList.add('active');
+                document.getElementById('historySubViewVoters').style.display = 'block';
+            } else if (viewType === 'system') {
+                document.getElementById('pillHistSub2').classList.add('active');
+                document.getElementById('historySubViewSystem').style.display = 'block';
+            } else if (viewType === 'schedule') {
+                document.getElementById('pillHistSub3').classList.add('active');
+                document.getElementById('historySubViewSchedule').style.display = 'block';
+            } else if (viewType === 'archives') {
+                document.getElementById('pillHistSub4').classList.add('active');
+                document.getElementById('historySubViewArchives').style.display = 'block';
+            }
+            loadHistoryHub(viewType);
+        }
+
+        async function loadHistoryHub(viewType) {
+            if (viewType === 'voters') {
+                const res = await fetchWithAdminAuth('/api/admin/history/voters');
+                const data = await res.json();
+                let html = '';
+                data.forEach(v => {
+                    html += `<tr><td><b>${v.voter_id}</b></td><td>${v.full_name}</td><td>${v.college}</td><td>${v.phone}</td><td>${v.assigned_booth}</td><td>${v.voted_booth}</td><td><span class="badge ${v.has_voted ? 'badge-active' : 'badge-pending'}">${v.has_voted ? 'VOTED' : 'PENDING'}</span></td></tr>`;
+                });
+                document.getElementById('histVotersBody').innerHTML = html || '<tr><td colspan="7">No voter history.</td></tr>';
+            } else if (viewType === 'system') {
+                const res = await fetchWithAdminAuth('/api/admin/history/system');
+                const data = await res.json();
+                let html = '';
+                data.forEach(l => {
+                    html += `<tr><td>${l.timestamp}</td><td><b>${l.eventType}</b></td><td>${l.description}</td><td>${l.initiatedBy}</td></tr>`;
+                });
+                document.getElementById('histSystemBody').innerHTML = html || '<tr><td colspan="4">No system history logs.</td></tr>';
+            } else if (viewType === 'schedule') {
+                const res = await fetchWithAdminAuth('/api/admin/schedules/history');
+                const data = await res.json();
+                let html = '';
+                data.forEach(s => {
+                    html += `<tr><td><b>${s.title}</b><br><small>${s.targetBooth}</small></td><td>${s.startTime} - ${s.endTime}</td><td>${s.totalVotesCast} votes (${s.turnoutPercentage}%)</td><td><span class="badge ${s.status === 'ACTIVE' ? 'badge-active' : 'badge-closed'}">${s.status}</span></td></tr>`;
+                });
+                document.getElementById('histScheduleBody').innerHTML = html || '<tr><td colspan="4">No schedule history.</td></tr>';
+            } else if (viewType === 'archives') {
+                const res = await fetchWithAdminAuth('/api/admin/history/archives');
+                const data = await res.json();
+                let html = '';
+                data.forEach(a => {
+                    html += `<tr><td>${a.archivedAt}</td><td><b>${a.totalVotesArchived} votes</b></td><td>Saved Snapshot Archive ID: ${a._id}</td></tr>`;
+                });
+                document.getElementById('histArchivesBody').innerHTML = html || '<tr><td colspan="3">No archived leaderboard snapshots.</td></tr>';
+            }
+        }
+
+        async function clearMasterHistory() {
+            showModalConfirm("Master Clear", "Permanently purge all votes, history archives, and closed booth logs?", async () => {
+                const res = await fetchWithAdminAuth('/api/admin/clear-all-history', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                if (res.ok) { 
+                    showModalAlert("Cleared", "Master History & Closed Logs Cleared!"); 
+                    loadHistoryHub('voters'); 
+                    loadBoothsList(); 
+                }
+            });
+        }
+
+        async function loadVotedAudit() {
+            const res = await fetchWithAdminAuth('/api/admin/voted-voters-list');
+            const voted = await res.json();
+            let vHTML = '';
+            voted.forEach(v => {
+                const photoSrc = v.voter_photo ? v.voter_photo : 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="40" height="45" fill="%2394a3b8"><rect width="100%" height="100%" fill="%23cbd5e1"/></svg>';
+                vHTML += `
+                    <tr>
+                        <td><b>${v.voter_id}</b></td>
+                        <td>${v.full_name}</td>
+                        <td>${v.phone || 'N/A'}</td>
+                        <td>${v.assigned_booth}</td>
+                        <td>${v.voted_booth}</td>
+                        <td>${v.timestamp}</td>
+                        <td><img src="${photoSrc}" class="photo-thumb" alt="Photo Audit" /></td>
+                    </tr>
+                `;
+            });
+            document.getElementById('votedAuditTableBody').innerHTML = vHTML || '<tr><td colspan="7">No voted audit records found.</td></tr>';
+        }
+
+        async function inspectVoterRecord() {
+            const voterId = document.getElementById('auditSearchVoterId').value.trim();
+            if (!voterId || voterId.length !== 6) {
+                showModalAlert("Validation Error", "Enter valid 6-Digit Voter ID!");
+                return;
+            }
+
+            const res = await fetchWithAdminAuth(`/api/admin/audit-voter/${encodeURIComponent(voterId)}`);
+            if (!res.ok) {
+                showModalAlert("Not Found", "Voter ID not found in system database!");
+                return;
+            }
+
+            const v = await res.json();
+            const photoSrc = v.voter_photo ? v.voter_photo : 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" fill="%2394a3b8"><rect width="100%" height="100%" fill="%23cbd5e1"/></svg>';
+            
+            document.getElementById('voterAuditDetails').innerHTML = `
+                <div style="background:#f1f5f9; padding:12px; border-radius:12px; display:flex; gap:12px; align-items:center;">
+                    <img src="${photoSrc}" style="width:70px; height:70px; border-radius:10px; object-fit:cover; border:2px solid #0284c7;" />
+                    <div>
+                        <h4 style="margin:0; font-size:14px;">${v.full_name} (${v.voter_id})</h4>
+                        <p style="margin:3px 0; font-size:11px; color:#64748b;">College: <b>${v.college}</b> | Phone: <b>${v.phone}</b></p>
+                        <p style="margin:3px 0; font-size:11px; color:#64748b;">Assigned Booth: <b>${v.assigned_booth}</b> | Voted At: <b>${v.voted_booth}</b></p>
+                        <p style="margin:3px 0; font-size:11px; color:#64748b;">Has Voted: <b style="color:${v.has_voted ? '#16a34a' : '#dc2626'};">${v.has_voted ? 'YES (' + v.party_choice + ')' : 'NO'}</b></p>
+                        <p style="margin:3px 0; font-size:11px; color:#64748b;">Timestamp: <b>${v.vote_timestamp}</b></p>
+                    </div>
+                </div>
+            `;
+        }
+
+        async function changeAdminCredentials() {
+            const oldUsername = document.getElementById('secOldUser').value.trim();
+            const oldPassword = document.getElementById('secOldPass').value.trim();
+            const newUsername = document.getElementById('secNewUser').value.trim();
+            const newPassword = document.getElementById('secNewPass').value.trim();
+
+            if (!oldPassword || !newUsername || !newPassword) {
+                showModalAlert("Validation Error", "Fill all security fields!");
+                return;
+            }
+
+            const res = await fetchWithAdminAuth('/api/admin/change-credentials', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ oldUsername, oldPassword, newUsername, newPassword })
+            });
+
+            const data = await res.json();
+            if (res.ok) {
+                showModalAlert("Success", "Admin Credentials Changed Successfully!");
+            } else {
+                showModalAlert("Error", data.error || "Failed to update security credentials.");
+            }
+        }
+    </script>
+</body>
+</html>

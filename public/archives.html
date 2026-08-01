@@ -1,0 +1,147 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Election Archive & Snapshot Vault</title>
+    <style>
+        :root {
+            --bg-primary: #f8fafc;
+            --sidebar-bg: #0f172a;
+            --card-bg: #ffffff;
+            --border-color: #e2e8f0;
+            --accent-blue: #0284c7;
+            --accent-green: #16a34a;
+            --accent-red: #dc2626;
+            --text-dark: #0f172a;
+            --text-muted: #64748b;
+        }
+
+        * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        body { margin: 0; background: var(--bg-primary); color: var(--text-dark); -webkit-text-size-adjust: 100%; }
+
+        .top-bar { 
+            background: linear-gradient(135deg, #0f172a, #1e293b); color: white; padding: 12px 16px; 
+            display: flex; align-items: center; justify-content: space-between;
+            box-shadow: 0 4px 12px rgba(15, 23, 42, 0.15); position: sticky; top: 0; z-index: 100;
+        }
+
+        .header-title { font-size: 15px; font-weight: 800; display: flex; align-items: center; gap: 8px; }
+        .role-badge { padding: 2px 8px; border-radius: 12px; background: #e0f2fe; color: #0369a1; font-size: 10px; font-weight: 800; text-transform: uppercase; }
+        
+        .header-actions { display: flex; align-items: center; gap: 8px; }
+        .btn-header { padding: 6px 12px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; color: white; font-size: 11px; text-decoration: none; }
+        .btn-back { background: #0284c7; }
+        .btn-logout { background: #dc2626; }
+
+        .container { padding: 16px; max-width: 950px; margin: 0 auto; }
+        .card { background: var(--card-bg); padding: 18px; border-radius: 16px; margin-bottom: 16px; border: 1px solid var(--border-color); box-shadow: 0 2px 8px rgba(0,0,0,0.02); }
+        .card h3 { margin-top: 0; font-size: 16px; color: var(--text-dark); font-weight: 800; }
+
+        .table-responsive { width: 100%; overflow-x: auto; margin-top: 10px; -webkit-overflow-scrolling: touch; }
+        table { width: 100%; border-collapse: collapse; font-size: 12px; white-space: nowrap; }
+        th, td { border: 1px solid var(--border-color); padding: 10px 12px; text-align: left; }
+        th { background: #f1f5f9; font-weight: 800; color: #475569; text-transform: uppercase; font-size: 10px; }
+
+        .snapshot-box { background: #f8fafc; border: 1px solid var(--border-color); border-radius: 10px; padding: 10px; margin-top: 6px; font-size: 11px; color: #334155; }
+    </style>
+</head>
+<body>
+
+    <div class="top-bar">
+        <div class="header-title">
+            📦 Archive & Snapshot Vault <span class="role-badge">SECURE</span>
+        </div>
+        <div class="header-actions">
+            <a href="/admin.html" class="btn-header btn-back">⬅️ Admin Panel</a>
+            <button class="btn-header btn-logout" onclick="logoutAdmin()">Log Out</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="card">
+            <h3>📜 Saved Leaderboard Snapshots & Archive Logs</h3>
+            <p style="font-size:12px; color:#64748b; margin-top:0;">This dedicated secure vault stores historical archives and vote breakdowns saved during leaderboard resets.</p>
+            
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr><th>Archived Timestamp</th><th>Total Votes Saved</th><th>Detailed Vote Snapshot Breakdown</th></tr>
+                    </thead>
+                    <tbody id="archivesTableBody">
+                        <tr><td colspan="3">Loading archive snapshots...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let adminAuthToken = localStorage.getItem('adminToken');
+
+        window.addEventListener('DOMContentLoaded', () => {
+            if (!adminAuthToken) {
+                alert("Unauthorized Access! Please log in as Master Admin.");
+                window.location.href = '/admin-login.html';
+                return;
+            }
+            loadArchiveVault();
+        });
+
+        async function loadArchiveVault() {
+            try {
+                const res = await fetch('/api/admin/history/archives', {
+                    headers: {
+                        'x-admin-token': adminAuthToken,
+                        'x-user-role': 'admin'
+                    }
+                });
+
+                if (res.status === 401) {
+                    alert("Session Expired! Please log in again.");
+                    localStorage.clear();
+                    window.location.href = '/admin-login.html';
+                    return;
+                }
+
+                const archives = await res.json();
+                let html = '';
+
+                if (!archives || archives.length === 0) {
+                    html = '<tr><td colspan="3" style="text-align:center; color:#64748b; font-style:italic;">No archive snapshots stored yet.</td></tr>';
+                } else {
+                    archives.forEach(a => {
+                        let snapshotDetails = '';
+                        if (a.votesSnapshot && a.votesSnapshot.length > 0) {
+                            let partyCounts = {};
+                            a.votesSnapshot.forEach(v => {
+                                partyCounts[v.party_id] = (partyCounts[v.party_id] || 0) + 1;
+                            });
+                            snapshotDetails = Object.entries(partyCounts).map(([party, count]) => `• <b>${party}:</b> ${count} votes`).join('<br>');
+                        } else {
+                            snapshotDetails = 'No detailed breakdown recorded.';
+                        }
+
+                        html += `
+                            <tr>
+                                <td><b>${a.archivedAt}</b></td>
+                                <td><span style="font-weight:bold; color:#0284c7;">${a.totalVotesArchived} votes</span></td>
+                                <td><div class="snapshot-box">${snapshotDetails}</div></td>
+                            </tr>
+                        `;
+                    });
+                }
+                document.getElementById('archivesTableBody').innerHTML = html;
+            } catch (err) {
+                document.getElementById('archivesTableBody').innerHTML = '<tr><td colspan="3" style="color:red;">Failed to load archives.</td></tr>';
+            }
+        }
+
+        function logoutAdmin() {
+            localStorage.clear();
+            window.location.href = '/admin-login.html';
+        }
+    </script>
+</body>
+</html>

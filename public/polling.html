@@ -1,0 +1,332 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Polling Officer Station Control</title>
+    <style>
+        :root {
+            --bg-primary: #f8fafc;
+            --card-bg: #ffffff;
+            --border-color: #e2e8f0;
+            --accent-blue: #0284c7;
+            --accent-green: #16a34a;
+            --accent-red: #dc2626;
+            --accent-yellow: #ca8a04;
+            --text-dark: #0f172a;
+            --text-muted: #64748b;
+        }
+
+        * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        body { margin: 0; background: var(--bg-primary); color: var(--text-dark); }
+
+        .top-bar { 
+            background: linear-gradient(135deg, #0f172a, #1e293b); color: white; padding: 10px 14px; 
+            display: flex; align-items: center; justify-content: space-between;
+            box-shadow: 0 4px 12px rgba(15, 23, 42, 0.15);
+        }
+
+        .container { padding: 12px; max-width: 550px; margin: 0 auto; }
+        .card { background: var(--card-bg); padding: 18px; border-radius: 16px; margin-bottom: 16px; border: 1px solid var(--border-color); box-shadow: 0 2px 8px rgba(0,0,0,0.03); }
+        .card h3 { margin-top: 0; font-size: 16px; color: var(--text-dark); font-weight: 800; display: flex; justify-content: space-between; align-items: center; }
+
+        label { font-size: 10px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 10px; display: block; }
+        input, select { width: 100%; padding: 11px; margin: 4px 0 10px 0; border-radius: 8px; border: 1px solid var(--border-color); font-size: 13px; outline: none; background: #f8fafc; color: var(--text-dark); font-weight: 600; }
+
+        .action-btn { width: 100%; padding: 12px; border-radius: 8px; border: none; font-size: 13px; font-weight: 800; cursor: pointer; color: white; display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 8px; }
+        .green-btn { background: linear-gradient(135deg, #16a34a, #15803d); }
+        .red-btn { background: linear-gradient(135deg, #dc2626, #b91c1c); }
+        .yellow-btn { background: linear-gradient(135deg, #ca8a04, #a16207); }
+        .blue-btn { background: linear-gradient(135deg, #0284c7, #0369a1); }
+        
+        .role-badge { display: inline-block; padding: 2px 8px; border-radius: 12px; background: #e0f2fe; color: #0369a1; font-size: 10px; font-weight: 800; text-transform: uppercase; }
+        .status-pill { font-size: 10px; padding: 3px 8px; border-radius: 10px; font-weight: 800; text-transform: uppercase; color: white; }
+        .logout-btn { background: #dc2626; color: white; border: none; padding: 6px 12px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 11px; }
+
+        .stat-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin: 12px 0; }
+        .stat-box { background: #f8fafc; padding: 10px; border-radius: 10px; border: 1px solid var(--border-color); text-align: center; }
+        .stat-box h4 { margin: 0; font-size: 9px; color: var(--text-muted); text-transform: uppercase; }
+        .stat-box p { margin: 3px 0 0 0; font-size: 16px; font-weight: 800; color: var(--text-dark); }
+
+        .timer-box { background: #fef2f2; border: 1px solid #fca5a5; padding: 10px; border-radius: 10px; text-align: center; margin-bottom: 12px; color: #991b1b; font-weight: bold; font-size: 12px; }
+
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(4px); display: none; align-items: center; justify-content: center; z-index: 999; padding: 12px; }
+        .modal-box { background: white; padding: 20px; border-radius: 18px; width: 100%; max-width: 480px; max-height: 85vh; overflow-y: auto; }
+    </style>
+</head>
+<body>
+
+    <div class="top-bar">
+        <div><strong>Polling Officer Portal</strong> <span class="role-badge">Station Control</span></div>
+        <button class="logout-btn" onclick="logoutStaff()">Log Out</button>
+    </div>
+
+    <div class="modal-overlay" id="auditModal">
+        <div class="modal-box">
+            <h3 style="margin-top:0; color:#0f172a;">📋 Official Station Audit Report</h3>
+            <div id="auditReportContent" style="font-size:12px; line-height:1.5; color:#334155; background:#f8fafc; padding:14px; border-radius:12px; border:1px solid var(--border-color);"></div>
+            <button class="action-btn green-btn" style="margin-top:15px;" onclick="closeAuditModalAndRefresh()">Confirm & Submit to Admin</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="card" id="step1Card">
+            <h3>🏛️ Select Polling Station</h3>
+            <label>Select Registered Booth:</label>
+            <select id="boothSelect" onchange="onBoothSelectChange()">
+                <option value="">-- Select Registered Booth --</option>
+            </select>
+
+            <label>Booth Code:</label>
+            <input type="text" id="boothCodeInput" placeholder="e.g. BOOTH-101" readonly />
+
+            <label>Station Password (Start or Session Password):</label>
+            <input type="password" id="passInput" placeholder="Enter booth password" />
+
+            <button class="action-btn green-btn" onclick="accessStation()">Activate / Relogin Station ➔</button>
+            <p id="step1Msg" style="color:#dc2626; font-size:12px; font-weight:800; margin-top:8px; text-align:center;"></p>
+        </div>
+
+        <div class="card" id="step2Card" style="display:none;">
+            <h3>
+                <span id="activeBoothTitle">BOOTH</span>
+                <span id="boothStatusPill" class="status-pill">PENDING</span>
+            </h3>
+
+            <!-- LIVE OFFICER SCHEDULE REMAINING TIMER -->
+            <div class="timer-box" id="schedTimerBox">
+                ⏱️ Schedule Time Remaining: <span id="officerSchedTimer">--:--:--</span>
+            </div>
+
+            <div class="stat-grid">
+                <div class="stat-box"><h4>Total Votes Cast</h4><p id="liveVotesCount">0</p></div>
+                <div class="stat-box"><h4>NOTA / NST Votes</h4><p id="liveNotaCount">0</p></div>
+            </div>
+
+            <div style="background:#f8fafc; padding:10px; border-radius:10px; border:1px solid var(--border-color); margin-bottom:12px;">
+                <label style="margin-top:0;">Party-Wise Breakdown:</label>
+                <div id="livePartyBreakdown" style="font-size:12px; color:#334155; margin-top:4px;">Loading tallies...</div>
+            </div>
+
+            <button class="action-btn blue-btn" onclick="openVotingKiosk()">🖥️ Open Voting Kiosk Window</button>
+            <button class="action-btn yellow-btn" id="pauseBtn" onclick="pauseBoothSession()">⏸️ Pause Polling</button>
+            <button class="action-btn green-btn" id="unpauseBtn" onclick="resumeBoothSession()" style="display:none;">▶️ Unpause Polling</button>
+            <button class="action-btn red-btn" onclick="closeBoothSession()">🔴 Close Station & Submit Audit</button>
+            <button class="action-btn" style="background:#64748b; margin-top:8px;" onclick="backToStep1()">⬅ Switch Booth</button>
+
+            <p id="step2Msg" style="color:#dc2626; font-size:12px; font-weight:800; margin-top:8px; text-align:center;"></p>
+        </div>
+    </div>
+
+    <script>
+        let registeredBooths = [];
+        let currentAuthenticatedBooth = null;
+        let refreshInterval = null;
+        let schedCountdownInterval = null;
+
+        window.addEventListener('DOMContentLoaded', async () => {
+            loadBoothsDropdown();
+            setInterval(loadBoothsDropdown, 3000);
+        });
+
+        function logoutStaff() { localStorage.clear(); window.location.href = '/admin-login.html'; }
+
+        async function loadBoothsDropdown() {
+            const res = await fetch('/api/admin/booths');
+            registeredBooths = await res.json();
+            const select = document.getElementById('boothSelect');
+            const currentSelected = select.value;
+            select.innerHTML = '<option value="">-- Select Registered Booth --</option>';
+
+            registeredBooths.forEach(b => {
+                const statusText = b.status || 'PENDING';
+                select.innerHTML += `<option value="${b.booth_code}">${b.booth_code} - ${b.location} (${statusText})</option>`;
+            });
+
+            if (currentSelected) select.value = currentSelected;
+        }
+
+        function onBoothSelectChange() {
+            const code = document.getElementById('boothSelect').value;
+            document.getElementById('boothCodeInput').value = code;
+        }
+
+        async function accessStation() {
+            const boothCode = document.getElementById('boothCodeInput').value.trim();
+            const password = document.getElementById('passInput').value.trim();
+            const msg = document.getElementById('step1Msg');
+
+            if (!boothCode || !password) {
+                msg.innerText = "Please select a booth and enter password!";
+                return;
+            }
+
+            const res = await fetch('/api/booth/start', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ boothCode, password })
+            });
+
+            const data = await res.json();
+            if (res.ok) {
+                currentAuthenticatedBooth = boothCode;
+                document.getElementById('step1Card').style.display = 'none';
+                document.getElementById('step2Card').style.display = 'block';
+                msg.innerText = "";
+                document.getElementById('passInput').value = "";
+
+                fetchLiveStationData();
+                startOfficerScheduleTimer();
+                refreshInterval = setInterval(fetchLiveStationData, 3000);
+            } else {
+                msg.innerText = data.error || "Authentication Failed!";
+            }
+        }
+
+        async function startOfficerScheduleTimer() {
+            if (!currentAuthenticatedBooth) return;
+            const res = await fetch(`/api/booth/active-schedule/${currentAuthenticatedBooth}`);
+            const data = await res.json();
+
+            clearInterval(schedCountdownInterval);
+
+            if (data.active && data.endTime) {
+                const endTime = new Date(data.endTime).getTime();
+
+                schedCountdownInterval = setInterval(() => {
+                    const now = new Date().getTime();
+                    const diff = endTime - now;
+
+                    if (diff <= 0) {
+                        clearInterval(schedCountdownInterval);
+                        document.getElementById('officerSchedTimer').innerText = "EXPIRED";
+                    } else {
+                        const hrs = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                        const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                        const secs = Math.floor((diff % (1000 * 60)) / 1000);
+                        document.getElementById('officerSchedTimer').innerText = `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+                    }
+                }, 1000);
+            } else {
+                document.getElementById('officerSchedTimer').innerText = "NO ACTIVE SCHED";
+            }
+        }
+
+        async function fetchLiveStationData() {
+            if (!currentAuthenticatedBooth) return;
+
+            const res = await fetch('/api/admin/analytics');
+            const data = await res.json();
+            const boothData = data.boothBreakdown[currentAuthenticatedBooth];
+
+            const boothsRes = await fetch('/api/admin/booths');
+            registeredBooths = await boothsRes.json();
+            const boothMeta = registeredBooths.find(b => b.booth_code === currentAuthenticatedBooth);
+
+            if (!boothData || !boothMeta) return;
+
+            document.getElementById('activeBoothTitle').innerText = `${currentAuthenticatedBooth} (${boothData.location})`;
+            document.getElementById('liveVotesCount').innerText = boothData.total;
+            document.getElementById('liveNotaCount').innerText = boothData.nota;
+
+            const pill = document.getElementById('boothStatusPill');
+            const status = boothMeta.status || 'ACTIVE';
+            pill.innerText = status;
+
+            const pauseBtn = document.getElementById('pauseBtn');
+            const unpauseBtn = document.getElementById('unpauseBtn');
+
+            if (status === 'ACTIVE') {
+                pill.style.background = "#16a34a";
+                pauseBtn.style.display = "block";
+                unpauseBtn.style.display = "none";
+            } else if (status === 'PAUSED') {
+                pill.style.background = "#ca8a04";
+                pauseBtn.style.display = "none";
+                unpauseBtn.style.display = "block";
+            } else if (status === 'CLOSED') {
+                pill.style.background = "#dc2626";
+                pauseBtn.style.display = "none";
+                unpauseBtn.style.display = "none";
+            }
+
+            let breakdownHTML = '';
+            boothData.candidateList.forEach(c => {
+                breakdownHTML += `• <b>${c.party_name}:</b> ${c.votes} votes<br>`;
+            });
+            document.getElementById('livePartyBreakdown').innerHTML = breakdownHTML || 'No party votes recorded yet.';
+        }
+
+        function openVotingKiosk() {
+            if (!currentAuthenticatedBooth) return;
+            window.open(`/index.html?booth=${encodeURIComponent(currentAuthenticatedBooth)}`, '_blank');
+        }
+
+        async function pauseBoothSession() {
+            const password = prompt("Enter session password to PAUSE polling:");
+            if (!password) return;
+
+            const res = await fetch('/api/booth/pause', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ boothCode: currentAuthenticatedBooth, password })
+            });
+
+            if (res.ok) fetchLiveStationData();
+            else alert("Failed to pause polling.");
+        }
+
+        async function resumeBoothSession() {
+            const password = prompt("Enter session password to UNPAUSE polling:");
+            if (!password) return;
+
+            const res = await fetch('/api/booth/resume', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ boothCode: currentAuthenticatedBooth, password })
+            });
+
+            if (res.ok) fetchLiveStationData();
+            else alert("Failed to unpause polling.");
+        }
+
+        async function closeBoothSession() {
+            const password = prompt("Enter END station password to CLOSE polling and submit audit:");
+            if (!password) return;
+
+            const res = await fetch('/api/booth/close', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ boothCode: currentAuthenticatedBooth, password })
+            });
+
+            const data = await res.json();
+            if (res.ok) {
+                const a = data.audit;
+                document.getElementById('auditReportContent').innerHTML = `
+                    <p><strong>Booth Code:</strong> ${a.boothCode}</p>
+                    <p><strong>Location Room:</strong> ${a.location}</p>
+                    <p><strong>Polling Head Name:</strong> ${a.headName}</p>
+                    <hr style="border:0; border-top:1px solid #cbd5e1; margin:8px 0;">
+                    <p><strong>Total Votes Counted:</strong> <span style="color:#16a34a; font-weight:bold; font-size:14px;">${a.voterCount}</span></p>
+                    <p><strong>Total Votes Left:</strong> <span style="color:#dc2626; font-weight:bold; font-size:14px;">${a.leftCount}</span></p>
+                    <p><strong>Total NOTA / NST Votes:</strong> <span style="color:#0284c7; font-weight:bold; font-size:14px;">${a.notaCount}</span></p>
+                `;
+                document.getElementById('auditModal').style.display = 'flex';
+            } else alert(data.error || "Invalid End Password!");
+        }
+
+        function closeAuditModalAndRefresh() { document.getElementById('auditModal').style.display = 'none'; backToStep1(); }
+
+        function backToStep1() {
+            if (refreshInterval) clearInterval(refreshInterval);
+            if (schedCountdownInterval) clearInterval(schedCountdownInterval);
+            currentAuthenticatedBooth = null;
+            document.getElementById('step2Card').style.display = 'none';
+            document.getElementById('step1Card').style.display = 'block';
+            loadBoothsDropdown();
+        }
+    </script>
+</body>
+</html>

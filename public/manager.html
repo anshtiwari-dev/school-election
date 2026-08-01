@@ -1,0 +1,133 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Election Manager Portal</title>
+    <style>
+        :root {
+            --bg-primary: #f8fafc;
+            --sidebar-bg: #0f172a;
+            --sidebar-active: #0284c7;
+            --text-dark: #0f172a;
+            --text-muted: #64748b;
+            --card-bg: #ffffff;
+            --border-color: #e2e8f0;
+            --accent-blue: #0284c7;
+            --accent-green: #16a34a;
+            --accent-red: #dc2626;
+        }
+
+        * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        body { margin: 0; background: var(--bg-primary); color: var(--text-dark); }
+
+        .top-bar { 
+            background: linear-gradient(135deg, #0f172a, #1e293b); 
+            color: white; 
+            padding: 14px 20px; 
+            display: flex; 
+            align-items: center; 
+            justify-content: space-between;
+            box-shadow: 0 4px 12px rgba(15, 23, 42, 0.15);
+        }
+        .container { padding: 16px; max-width: 850px; margin: 0 auto; }
+        .grid-stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 16px; }
+        .stat-card { background: var(--card-bg); padding: 16px; border-radius: 14px; text-align: center; border: 1px solid var(--border-color); }
+        .stat-card h4 { margin: 0; font-size: 11px; color: var(--text-muted); text-transform: uppercase; }
+        .stat-card p { margin: 6px 0 0 0; font-size: 22px; font-weight: 800; color: var(--text-dark); }
+        
+        .card { background: var(--card-bg); padding: 18px; border-radius: 16px; margin-bottom: 16px; border: 1px solid var(--border-color); }
+        .card h3 { margin-top: 0; font-size: 16px; color: var(--text-dark); }
+        
+        table { width: 100%; border-collapse: collapse; font-size: 13px; text-align: left; }
+        td, th { padding: 10px 12px; border-bottom: 1px solid var(--border-color); }
+        th { background: #f1f5f9; color: var(--text-muted); font-weight: 700; font-size: 11px; text-transform: uppercase; }
+
+        .role-badge { display: inline-block; padding: 3px 8px; border-radius: 20px; background: #fef08a; color: #854d0e; font-size: 10px; font-weight: 800; text-transform: uppercase; }
+        .logout-btn { background: #dc2626; color: white; border: none; padding: 6px 14px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 12px; }
+    </style>
+</head>
+<body>
+
+    <div class="top-bar">
+        <div>
+            <strong>Election Manager Portal</strong> <span class="role-badge" id="managerNameBadge">Read-Only Observer</span>
+        </div>
+        <button class="logout-btn" onclick="logoutStaff()">Log Out</button>
+    </div>
+
+    <div class="container">
+        <div class="grid-stats">
+            <div class="stat-card"><h4>Total Registered</h4><p id="dashReg">0</p></div>
+            <div class="stat-card"><h4>Votes Cast</h4><p id="dashCast">0</p></div>
+            <div class="stat-card"><h4>Turnout %</h4><p id="dashTurnout">0%</p></div>
+            <div class="stat-card"><h4>Active Booths</h4><p id="dashBooths">0</p></div>
+        </div>
+
+        <div class="card">
+            <h3>🏆 Live Party Leaderboard</h3>
+            <table>
+                <thead>
+                    <tr><th>Rank</th><th>Party</th><th>Candidates</th><th>Votes</th><th>Share</th></tr>
+                </thead>
+                <tbody id="managerLeaderboard"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        window.addEventListener('DOMContentLoaded', async () => {
+            const role = localStorage.getItem('staffRole');
+            const username = localStorage.getItem('staffUsername');
+            const name = localStorage.getItem('staffName');
+
+            // Allow both manager role and master admin
+            if ((!role || role !== 'manager') && localStorage.getItem('adminRole') !== 'admin') {
+                alert("Unauthorized Access! Please log in with a Manager or Admin account.");
+                window.location.href = '/admin.html';
+                return;
+            }
+
+            if (name) {
+                document.getElementById('managerNameBadge').innerText = `${name} (Manager)`;
+            }
+
+            loadManagerData();
+        });
+
+        function logoutStaff() {
+            localStorage.clear();
+            window.location.href = '/admin.html';
+        }
+
+        async function loadManagerData() {
+            try {
+                const statsRes = await fetch('/api/admin/dashboard-stats');
+                const stats = await statsRes.json();
+                document.getElementById('dashReg').innerText = stats.totalVoters;
+                document.getElementById('dashCast').innerText = stats.totalVotesCast;
+                document.getElementById('dashTurnout').innerText = stats.turnout + '%';
+                document.getElementById('dashBooths').innerText = `${stats.activeBooths} / ${stats.totalBooths}`;
+
+                const analyticsRes = await fetch('/api/admin/analytics');
+                const analytics = await analyticsRes.json();
+                const tbody = document.getElementById('managerLeaderboard');
+                tbody.innerHTML = '';
+
+                analytics.leaderboard.forEach((item, idx) => {
+                    tbody.innerHTML += `<tr>
+                        <td>#${idx+1}</td>
+                        <td><b>${item.party_name}</b></td>
+                        <td>${item.totalCandidates}</td>
+                        <td>${item.count}</td>
+                        <td>${item.percentage}%</td>
+                    </tr>`;
+                });
+            } catch (err) {
+                console.error("Data Load Error:", err);
+            }
+        }
+    </script>
+</body>
+</html>
