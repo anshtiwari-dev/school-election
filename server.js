@@ -1,4 +1,3 @@
-
 const express = require('express');
 const { parties, boothSessions, voters, votes, staff, historyArchive, schedules, systemHistory } = require('./database');
 
@@ -831,10 +830,12 @@ async function printStartupDiagnostics() {
     console.log("==================================================");
 }
 
-app.listen(3000, async () => {
+// Bind dynamically to Render PORT
+const PORT = process.env.PORT || 3000;
+
+app.listen(PORT, '0.0.0.0', async () => {
     await printStartupDiagnostics();
-    console.log(" Enterprise Election Server Running!");
-    console.log(" Access URL: http://localhost:3000");
+    console.log(` Enterprise Election Server Running on Port ${PORT}!`);
     console.log(" Booths, Staff, and Archives Protected from Data Resets");
     console.log("==================================================");
 });
