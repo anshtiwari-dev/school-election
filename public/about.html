@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About - Digital Election System</title>
+    <style>
+        :root {
+            --bg-main: #0f172a;
+            --bg-card: #1e293b;
+            --accent: #0284c7;
+            --accent-hover: #0369a1;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --border-color: #334155;
+            --highlight: #38bdf8;
+        }
+
+        * {
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .navbar {
+            background-color: #090d16;
+            padding: 16px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .logo {
+            font-size: 18px;
+            font-weight: 800;
+            color: var(--highlight);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 12px;
+        }
+
+        .nav-links a {
+            color: var(--text-main);
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 14px;
+            padding: 8px 16px;
+            border-radius: 8px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            transition: all 0.2s ease;
+        }
+
+        .nav-links a:hover {
+            border-color: var(--highlight);
+        }
+
+        .nav-links a.btn-primary {
+            background: var(--accent);
+            border: none;
+        }
+
+        .nav-links a.btn-primary:hover {
+            background: var(--accent-hover);
+        }
+
+        .container {
+            max-width: 960px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            flex: 1;
+        }
+
+        .hero {
+            text-align: center;
+            margin-bottom: 48px;
+        }
+
+        .hero h1 {
+            font-size: 36px;
+            font-weight: 800;
+            margin-bottom: 16px;
+            background: linear-gradient(135deg, #ffffff 0%, var(--highlight) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero p {
+            font-size: 16px;
+            color: var(--text-muted);
+            max-width: 700px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+
+        .section-title {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 20px;
+            color: var(--highlight);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .grid-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 40px;
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .stat-card .number {
+            font-size: 20px;
+            font-weight: 800;
+            color: var(--highlight);
+            margin-bottom: 6px;
+        }
+
+        .stat-card .label {
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        .btn-contact {
+            display: inline-block;
+            margin-top: 10px;
+            padding: 6px 14px;
+            background: var(--accent);
+            color: #ffffff;
+            text-decoration: none;
+            font-size: 12px;
+            font-weight: 700;
+            border-radius: 6px;
+            transition: background 0.2s ease;
+        }
+
+        .btn-contact:hover {
+            background: var(--accent-hover);
+        }
+
+        .email-subtext {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-top: 6px;
+            word-break: break-all;
+        }
+
+        .email-subtext a {
+            color: var(--highlight);
+            text-decoration: none;
+        }
+
+        .email-subtext a:hover {
+            text-decoration: underline;
+        }
+
+        .grid-features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .card {
+            background: var(--bg-card);
+            padding: 24px;
+            border-radius: 14px;
+            border: 1px solid var(--border-color);
+            transition: transform 0.2s ease, border-color 0.2s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            border-color: #475569;
+        }
+
+        .card h3 {
+            margin-bottom: 10px;
+            color: var(--text-main);
+            font-size: 17px;
+        }
+
+        .card p {
+            color: var(--text-muted);
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .cta-section {
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            border: 1px solid var(--border-color);
+            padding: 36px 24px;
+            border-radius: 16px;
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .cta-section h2 {
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+
+        .cta-section p {
+            color: var(--text-muted);
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+
+        .btn-large {
+            display: inline-block;
+            background: var(--accent);
+            color: white;
+            text-decoration: none;
+            padding: 14px 28px;
+            border-radius: 10px;
+            font-weight: 700;
+            font-size: 15px;
+            transition: background 0.2s ease;
+        }
+
+        .btn-large:hover {
+            background: var(--accent-hover);
+        }
+
+        footer {
+            text-align: center;
+            padding: 24px;
+            color: var(--text-muted);
+            font-size: 13px;
+            border-top: 1px solid var(--border-color);
+            background: #090d16;
+        }
+
+        @media (max-width: 600px) {
+            .hero h1 { font-size: 28px; }
+            .navbar { flex-direction: column; gap: 12px; align-items: flex-start; }
+            .nav-links { width: 100%; }
+            .nav-links a { flex: 1; text-align: center; }
+        }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar">
+        <div class="logo">ðŸ—³ï¸ Enterprise Election Portal</div>
+        <div class="nav-links">
+            <a href="/admin-login.html">Admin Login</a>
+            <a href="/polling.html" class="btn-primary">Polling Booth</a>
+        </div>
+    </nav>
+
+    <div class="container">
+
+        <section class="hero">
+            <h1>Digital Election System</h1>
+            <p>A high-security, lightweight electronic voting and election management platform designed to automate institutional polling with absolute accuracy, zero paper waste, and real-time result aggregation.</p>
+        </section>
+
+        <div class="section-title">â±ï¸ Development & Engineering Metrics</div>
+        <div class="grid-stats">
+            <div class="stat-card">
+                <div class="number">July 27 â€“ Aug 1 (4 PM)</div>
+                <div class="label">Project Timeline (6 Days)</div>
+            </div>
+            <div class="stat-card">
+                <div class="number">18 Hours</div>
+                <div class="label">Total Coding Duration</div>
+            </div>
+            <div class="stat-card">
+                <div class="number">12 Hours</div>
+                <div class="label">Testing & System QA</div>
+            </div>
+            <div class="stat-card">
+                <div class="number">Ansh Tiwari</div>
+                <div class="label">Developer & System Architect</div>
+                <a href="mailto:anshtiwari88123@gmail.com" class="btn-contact">âœ‰ï¸ Contact Me</a>
+                <div class="email-subtext">or mail here: <a href="mailto:anshtiwari88123@gmail.com">anshtiwari88123@gmail.com</a></div>
+            </div>
+        </div>
+
+        <div class="section-title">ðŸ”‘ Key System Features</div>
+        <div class="grid-features">
+            <div class="card">
+                <h3>ðŸ›¡ï¸ Station Password Locking</h3>
+                <p>Polling booths are secured behind station-level passwords, preventing unauthorized access and ensuring stations are initialized only by approved officials.</p>
+            </div>
+            <div class="card">
+                <h3>ðŸ†” Instant Voter Verification</h3>
+                <p>Identifies voters swiftly via unique 6-digit assigned Voter IDs, ensuring smooth queue management and fast credential checking.</p>
+            </div>
+            <div class="card">
+                <h3>ðŸ”’ Single-Vote Security Logic</h3>
+                <p>Automated database locking immediately marks voters as "Voted" upon submission, blocking any subsequent attempts or double-voting attempts.</p>
+            </div>
+            <div class="card">
+                <h3>ðŸ“Š Live Tally Dashboard</h3>
+                <p>Real-time event broadcasting updates election counts instantly on the Master Admin Panel with zero manual hand-counting required.</p>
+            </div>
+            <div class="card">
+                <h3>ðŸ“‹ Comprehensive Audit Logging</h3>
+                <p>Maintains timestamped records of station access, vote submissions, and administrative changes to ensure total election transparency.</p>
+            </div>
+            <div class="card">
+                <h3>âš¡ Built for Practicality</h3>
+                <p>Optimized to run seamlessly across local networks or remote hosts, bringing enterprise-level election security to institutions without high cost.</p>
+            </div>
+        </div>
+
+        <div class="section-title">ðŸŒ Ideal Use Cases</div>
+        <div class="grid-features">
+            <div class="card">
+                <h3>ðŸ« Schools & Universities</h3>
+                <p>Ideal for Student Council elections, Head Boy/Girl selections, class representative votes, and university society polling.</p>
+            </div>
+            <div class="card">
+                <h3>ðŸ¢ Corporations & Organizations</h3>
+                <p>Perfect for corporate board voting, union leader selections, employee awards, and committee decision-making.</p>
+            </div>
+        </div>
+
+        <div class="cta-section">
+            <h2>Ready to Proceed?</h2>
+            <p>Access the appropriate portal depending on your administrative or voting role.</p>
+            <a href="/polling.html" class="btn-large">ðŸ—³ï¸ Go to Polling Station</a>
+        </div>
+
+    </div>
+
+    <footer>
+        Designed & Developed by Ansh Tiwari | Enterprise Digital Election Portal
+    </footer>
+
+</body>
+</html>
