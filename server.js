@@ -830,12 +830,16 @@ async function printStartupDiagnostics() {
     console.log("==================================================");
 }
 
-// Bind dynamically to Render PORT
+// Bind dynamically to PORT (Render/Local)
 const PORT = process.env.PORT || 3000;
 
-app.listen(PORT, '0.0.0.0', async () => {
-    await printStartupDiagnostics();
-    console.log(` Enterprise Election Server Running on Port ${PORT}!`);
-    console.log(" Booths, Staff, and Archives Protected from Data Resets");
-    console.log("==================================================");
-});
+if (process.env.NODE_ENV !== 'production' || process.env.RENDER) {
+    app.listen(PORT, '0.0.0.0', async () => {
+        await printStartupDiagnostics();
+        console.log(` Enterprise Election Server Running on Port ${PORT}!`);
+        console.log("==================================================");
+    });
+}
+
+// Export Express app for Vercel serverless deployment
+module.exports = app;
